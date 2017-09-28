@@ -46,19 +46,22 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mCallbackManager = CallbackManager.Factory.create();
+        mAuth = FirebaseAuth.getInstance();
+
+
         LoginButton loginButton = (LoginButton)findViewById(R.id.facebook_login_button);
         loginButton.setReadPermissions("email", "public_profile");
 
 
         //Create instance of database
         mDatabase = FirebaseDatabase.getInstance();
-        mDatabaseReference = mDatabase.getReference("user_details");
+        mDatabaseReference = mDatabase.getReference();
         loginButton.registerCallback(mCallbackManager, new FacebookCallback<LoginResult>() {
             @Override
             public void onSuccess(LoginResult loginResult) {
                 Log.d(TAG, "facebook:onSuccess:" + loginResult);
                 handleFacebookAccessToken(loginResult.getAccessToken());
-                getUserInfo(loginResult);
+                //getUserInfo(loginResult);
             }
 
             @Override
@@ -73,7 +76,8 @@ public class MainActivity extends AppCompatActivity {
                 // ...
             }
         });
-        mAuth = FirebaseAuth.getInstance();
+
+
         mAuthListener = new FirebaseAuth.AuthStateListener() {
             @Override
             public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
@@ -97,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
                     final User loggedIn = new User(uid, name, email);
                     Log.i("user",loggedIn.getName());
 
-                    mDatabaseReference.child("users").child(loggedIn.getId()).setValue(loggedIn);
+                    mDatabaseReference.child("user_details").child("users").child(loggedIn.getId()).setValue(loggedIn);
 
                     mDatabaseReference.child("users").addValueEventListener(new ValueEventListener() {
                         @Override
@@ -160,48 +164,48 @@ public class MainActivity extends AppCompatActivity {
             startActivity(i);
         }
     }
-    protected void getUserInfo(final LoginResult login_result){
-
-        GraphRequest data_request = GraphRequest.newMeRequest(
-                login_result.getAccessToken(),
-                new GraphRequest.GraphJSONObjectCallback() {
-                    @Override
-                    public void onCompleted(
-                            JSONObject object,
-                            GraphResponse response) {
-                        try {
-                            String facebook_id = object.getString("id");
-                            String f_name = object.getString("name");
-                            String email_id = object.getString("email");
-                            String token = login_result.getAccessToken().getToken();
-                            String picUrl = "https://graph.facebook.com/me/picture?type=normal&method=GET&access_token="+ token;
-
-                            saveFacebookCredentialsInFirebase(login_result.getAccessToken());
-
-                        } catch (JSONException e) {
-                            // TODO Auto-generated catch block
-                        }
-                    }
-                });
-        Bundle permission_param = new Bundle();
-        permission_param.putString("fields", "id,name,email,picture.width(120).height(120)");
-        data_request.setParameters(permission_param);
-        data_request.executeAsync();
-        data_request.executeAsync();
-    }
-    private void saveFacebookCredentialsInFirebase(AccessToken accessToken){
-        AuthCredential credential = FacebookAuthProvider.getCredential(accessToken.getToken());
-        mAuth.signInWithCredential(credential).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-            @Override
-            public void onComplete(@NonNull Task<AuthResult> task) {
-                if(!task.isSuccessful()){
-                    Toast.makeText(getApplicationContext(),"Error logging in", Toast.LENGTH_LONG).show();
-                }else{
-                    Toast.makeText(getApplicationContext(),"Login in Successful", Toast.LENGTH_LONG).show();
-                }
-            }
-        });
-    }
+//    protected void getUserInfo(final LoginResult login_result){
+//
+//        GraphRequest data_request = GraphRequest.newMeRequest(
+//                login_result.getAccessToken(),
+//                new GraphRequest.GraphJSONObjectCallback() {
+//                    @Override
+//                    public void onCompleted(
+//                            JSONObject object,
+//                            GraphResponse response) {
+//                        try {
+//                            String facebook_id = object.getString("id");
+//                            String f_name = object.getString("name");
+//                            String email_id = object.getString("email");
+//                            String token = login_result.getAccessToken().getToken();
+//                            String picUrl = "https://graph.facebook.com/me/picture?type=normal&method=GET&access_token="+ token;
+//
+//                            saveFacebookCredentialsInFirebase(login_result.getAccessToken());
+//
+//                        } catch (JSONException e) {
+//                            // TODO Auto-generated catch block
+//                        }
+//                    }
+//                });
+//        Bundle permission_param = new Bundle();
+//        permission_param.putString("fields", "id,name,email,picture.width(120).height(120)");
+//        data_request.setParameters(permission_param);
+//        data_request.executeAsync();
+//        data_request.executeAsync();
+//    }
+//    private void saveFacebookCredentialsInFirebase(AccessToken accessToken){
+//        AuthCredential credential = FacebookAuthProvider.getCredential(accessToken.getToken());
+//        mAuth.signInWithCredential(credential).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+//            @Override
+//            public void onComplete(@NonNull Task<AuthResult> task) {
+//                if(!task.isSuccessful()){
+//                    Toast.makeText(getApplicationContext(),"Error logging in", Toast.LENGTH_LONG).show();
+//                }else{
+//                    Toast.makeText(getApplicationContext(),"Login in Successful", Toast.LENGTH_LONG).show();
+//                }
+//            }
+//        });
+//    }
 
     @Override
         protected void onActivityResult(int requestCode, int resultCode, Intent data) {
